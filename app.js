@@ -1,5 +1,6 @@
 /**
  * Unit Farmasi Klinik Kesihatan Sik — Standalone Temperature Web App Script
+ * Mobile-First Optimized Logic
  */
 
 const CONFIG = {
@@ -7,9 +8,9 @@ const CONFIG = {
   defaultUrl: 'https://script.google.com/macros/s/AKfycbx84PC4_XAKuYaT9NGZgq4-wZbafTlal7h4YmURvX0rZ5-6zQrRpM_FcxAbt-HMo28/exec',
   adminPin: '2104',
   ranges: {
-    PETI_SEJUK: { min: -4, max: 17, targetMin: 2, targetMax: 8, label: 'Peti Sejuk (Cold Chain: 2.0°C ke 8.0°C)' },
-    BILIK:      { min: 12, max: 34, targetMin: 20, targetMax: 25, label: 'Bilik Suhu Ambien (12.0°C ke 34.0°C)' },
-    SUBSTOR:    { min: 12, max: 34, targetMin: 20, targetMax: 25, label: 'Substor Suhu Ambien (12.0°C ke 34.0°C)' }
+    PETI_SEJUK: { min: -4, max: 17, targetMin: 2, targetMax: 8, label: 'Peti Sejuk (Cold Chain: 2.0°C - 8.0°C)' },
+    BILIK:      { min: 12, max: 34, targetMin: 20, targetMax: 25, label: 'Bilik Suhu Ambien (12.0°C - 34.0°C)' },
+    SUBSTOR:    { min: 12, max: 34, targetMin: 20, targetMax: 25, label: 'Substor Suhu Ambien (12.0°C - 34.0°C)' }
   },
   perkara: {
     PETI_SEJUK: [
@@ -36,6 +37,7 @@ const CONFIG = {
 };
 
 let currentLokasi = 'PETI_SEJUK';
+let currentView = 'form';
 let logs = JSON.parse(localStorage.getItem('kk_sik_temp_logs') || '[]');
 let storedUrl = localStorage.getItem('kk_sik_web_app_url');
 if (!storedUrl || storedUrl.includes('AKfycbw7') || storedUrl !== CONFIG.defaultUrl) {
@@ -67,7 +69,16 @@ function initApp() {
   const slotRadio = document.querySelector(`input[name="slot"][value="${autoSlot}"]`);
   if (slotRadio) slotRadio.checked = true;
 
-  // Event Listeners for Date & Slot to calculate Target Row
+  // Load remembered staff name
+  const savedName = localStorage.getItem('kk_sik_staff_name');
+  if (savedName) {
+    const nameEl = document.getElementById('namaInput');
+    if (nameEl && !nameEl.value) {
+      nameEl.value = savedName;
+    }
+  }
+
+  // Event Listeners for Date & Slot
   document.getElementById('dateInput').addEventListener('change', updateCalculatedRow);
   document.querySelectorAll('input[name="slot"]').forEach(r => {
     r.addEventListener('change', () => {
@@ -84,12 +95,31 @@ function initApp() {
     }
   });
 
-  // Switch to initial location
+  // Switch to initial location & view
   switchLokasi('PETI_SEJUK');
   updateCalculatedRow();
   checkTimeWindow();
   renderLogs();
-  initChart();
+}
+
+/** Switch View Tabs (Form, History, Chart) */
+function switchView(viewName) {
+  currentView = viewName;
+  document.getElementById('formViewSection').classList.toggle('hidden', viewName !== 'form');
+  document.getElementById('historyViewSection').classList.toggle('hidden', viewName !== 'history');
+  document.getElementById('chartViewSection').classList.toggle('hidden', viewName !== 'chart');
+
+  document.getElementById('viewBtnForm').classList.toggle('active', viewName === 'form');
+  document.getElementById('viewBtnHistory').classList.toggle('active', viewName === 'history');
+  document.getElementById('viewBtnChart').classList.toggle('active', viewName === 'chart');
+
+  if (viewName === 'chart') {
+    if (!tempChart) {
+      initChart();
+    } else {
+      updateChart();
+    }
+  }
 }
 
 /** Switch Location (Peti Sejuk, Bilik, Substor) */
@@ -97,7 +127,7 @@ function switchLokasi(lokasiKey) {
   currentLokasi = lokasiKey;
 
   // Sync tab UI buttons
-  document.querySelectorAll('.tab-btn').forEach(btn => {
+  document.querySelectorAll('.location-segmented-bar .tab-btn').forEach(btn => {
     if (btn.getAttribute('data-lokasi') === lokasiKey) {
       btn.classList.add('active');
     } else {
@@ -107,8 +137,13 @@ function switchLokasi(lokasiKey) {
 
   // Update Section Headers & Badges
   const cfg = CONFIG.ranges[lokasiKey];
-  document.getElementById('activeLocationTitle').textContent = lokasiKey.replace('_', ' ');
   document.getElementById('locationRangeBadge').textContent = cfg.label;
+
+  const locNameFormatted = lokasiKey.replace('_', ' ');
+  const historyTitle = document.getElementById('historyLocationTitle');
+  if (historyTitle) historyTitle.textContent = locNameFormatted;
+  const chartTitle = document.getElementById('chartLocationTitle');
+  if (chartTitle) chartTitle.textContent = locNameFormatted;
 
   // Populate Perkara Select Options
   const select = document.getElementById('perkaraSelect');
@@ -125,7 +160,23 @@ function switchLokasi(lokasiKey) {
   ['min', 'semasa', 'max'].forEach(id => validateTemperatureInput(id));
 
   renderLogs();
-  updateChart();
+  if (tempChart) updateChart();
+}
+
+/** Toggle Incident Accordion */
+function toggleIncidentAccordion(forceOpen) {
+  const box = document.getElementById('incidentFieldsBox');
+  const chevron = document.getElementById('accordionChevron');
+  if (!box) return;
+
+  const shouldOpen = forceOpen !== undefined ? forceOpen : box.classList.contains('hidden');
+  if (shouldOpen) {
+    box.classList.remove('hidden');
+    if (chevron) chevron.textContent = '▲';
+  } else {
+    box.classList.add('hidden');
+    if (chevron) chevron.textContent = '▼';
+  }
 }
 
 /** Calculate Target Row in Google Sheets based on user date + slot */
@@ -136,15 +187,15 @@ function updateCalculatedRow() {
   const rowBadge = document.getElementById('targetRowPill');
 
   if (!dateStr) {
-    rowBadge.innerHTML = '📊 Baris Google Sheets: -';
+    rowBadge.innerHTML = 'Target: Baris --';
     return;
   }
 
   const targetRow = calculateTargetRow(dateStr, slot);
   if (targetRow > 0) {
-    rowBadge.innerHTML = `📊 Target Google Sheets: <b>Baris ${targetRow}</b> (${slot})`;
+    rowBadge.innerHTML = `Target: <b>Baris ${targetRow}</b> (${slot})`;
   } else {
-    rowBadge.innerHTML = `⚠️ Tarikh Luar Julat (2025 - 2036)`;
+    rowBadge.innerHTML = `Luar Julat (2025-2036)`;
   }
 }
 
@@ -195,30 +246,24 @@ function validateTemperatureInput(id) {
   if (!badge) return;
 
   if (isNaN(val)) {
-    badge.className = 'temp-badge hidden';
+    badge.className = 'temp-badge-small hidden';
     return;
   }
 
   const cfg = CONFIG.ranges[currentLokasi];
 
   if (val >= cfg.targetMin && val <= cfg.targetMax) {
-    badge.className = 'temp-badge ok';
-    badge.textContent = `✅ Selamat (${val}°C)`;
+    badge.className = 'temp-badge-small ok';
+    badge.textContent = `✅ Normal (${val}°C)`;
   } else if (val >= cfg.min && val <= cfg.max) {
-    badge.className = 'temp-badge warn';
+    badge.className = 'temp-badge-small warn';
     badge.textContent = `⚠️ Perhatian (${val}°C)`;
   } else {
-    badge.className = 'temp-badge warn';
-    badge.textContent = `🚨 Luar Julat Sah (${cfg.min}°C ke ${cfg.max}°C)!`;
-    // Auto-open incident report form
-    document.getElementById('incidentYes').checked = true;
-    toggleIncidentForm(true);
+    badge.className = 'temp-badge-small warn';
+    badge.textContent = `🚨 Luar Julat (${cfg.min}°C-${cfg.max}°C)!`;
+    // Auto-expand incident report accordion
+    toggleIncidentAccordion(true);
   }
-}
-
-function toggleIncidentForm(show) {
-  const box = document.getElementById('incidentFieldsBox');
-  if (box) box.classList.toggle('hidden', !show);
 }
 
 let pendingOverwrite = false;
@@ -241,10 +286,18 @@ document.getElementById('tempForm').addEventListener('submit', async (e) => {
     overwrite: pendingOverwrite
   };
 
+  // Remember staff name if checkbox checked
+  const remCheckbox = document.getElementById('rememberNameCheckbox');
+  if (remCheckbox && remCheckbox.checked && payload.nama) {
+    localStorage.setItem('kk_sik_staff_name', payload.nama);
+  }
+
   // Reset overwrite flag for next submission
   pendingOverwrite = false;
 
-  if (document.getElementById('incidentYes').checked) {
+  const incidentBox = document.getElementById('incidentFieldsBox');
+  const incidentOpen = incidentBox && !incidentBox.classList.contains('hidden');
+  if (incidentOpen) {
     payload.incident = {
       enabled: true,
       date: document.getElementById('incidentDate').value || payload.date,
@@ -308,7 +361,7 @@ document.getElementById('tempForm').addEventListener('submit', async (e) => {
   showSuccessModal(success);
   resetForm();
   renderLogs();
-  updateChart();
+  if (tempChart) updateChart();
 });
 
 /** Overwrite Modal Handlers */
@@ -332,20 +385,21 @@ function closeOverwriteModal() {
 /** Render Recent Logs Table */
 function renderLogs() {
   const tbody = document.getElementById('logTableBody');
+  if (!tbody) return;
   const filtered = logs.filter(l => l.lokasi === currentLokasi);
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Tiada rekod disimpan untuk ${currentLokasi.replace('_',' ')} lagi.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:16px;">Tiada rekod disimpan untuk ${currentLokasi.replace('_',' ')} lagi.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.slice(0, 15).map(r => `
     <tr>
       <td><b>${r.date}</b></td>
-      <td><span class="range-pill">${r.slot}</span></td>
-      <td>${r.min !== '' ? r.min + ' °C' : '-'}</td>
-      <td><b>${r.semasa !== '' ? r.semasa + ' °C' : '-'}</b></td>
-      <td>${r.max !== '' ? r.max + ' °C' : '-'}</td>
+      <td><span style="font-weight:700;">${r.slot}</span></td>
+      <td>${r.min !== '' ? r.min + '°C' : '-'}</td>
+      <td><b>${r.semasa !== '' ? r.semasa + '°C' : '-'}</b></td>
+      <td>${r.max !== '' ? r.max + '°C' : '-'}</td>
       <td>${r.perkara || '-'}</td>
       <td>${r.nama || '-'}</td>
       <td>${r.synced ? '<span style="color:var(--success);">✅ Synced</span>' : '<span style="color:var(--warning);">💾 Offline</span>'}</td>
@@ -355,9 +409,16 @@ function renderLogs() {
 
 /** Reset Form */
 function resetForm() {
+  const nameVal = document.getElementById('namaInput').value;
   document.getElementById('tempForm').reset();
-  document.getElementById('incidentNo').checked = true;
-  toggleIncidentForm(false);
+  
+  // Restore remembered name if available
+  const savedName = localStorage.getItem('kk_sik_staff_name') || nameVal;
+  if (savedName) {
+    document.getElementById('namaInput').value = savedName;
+  }
+
+  toggleIncidentAccordion(false);
   initApp();
 }
 
@@ -396,7 +457,7 @@ function showSuccessModal(isSynced) {
     ? 'Rekod suhu telah berjaya disinkronkan ke Google Spreadsheet (Unit Farmasi KK Sik)!'
     : 'Rekod telah disimpan secara tempatan (Local Storage).';
   modal.classList.add('active');
-  setTimeout(() => modal.classList.remove('active'), 2200);
+  setTimeout(() => modal.classList.remove('active'), 2000);
 }
 
 /** Export CSV Data */
@@ -448,8 +509,7 @@ function initChart() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top' },
-        title: { display: true, text: 'Trend Bacaan Suhu' }
+        legend: { position: 'top' }
       },
       scales: {
         y: { title: { display: true, text: 'Suhu (°C)' } }
@@ -469,6 +529,6 @@ function updateChart() {
   tempChart.data.datasets[1].data = filtered.map(f => parseFloat(f.semasa) || null);
   tempChart.data.datasets[2].data = filtered.map(f => parseFloat(f.max) || null);
 
-  tempChart.options.plugins.title.text = `Trend Bacaan Suhu — ${currentLokasi.replace('_',' ')}`;
   tempChart.update();
 }
+
