@@ -232,6 +232,11 @@ document.getElementById('tempForm').addEventListener('submit', async (e) => {
     perkara: fd.get('perkara'),
     nama: fd.get('nama')
   };
+  const existingIdx = logs.findIndex(l => l.lokasi === payload.lokasi && l.date === payload.date && l.slot === payload.slot);
+  if (existingIdx !== -1) {
+    if (!confirm("Data bagi slot ini telah diisi. Adakah anda pasti mahu overwrite?")) return;
+    logs.splice(existingIdx, 1);
+  }
 
   if (document.getElementById('incidentYes').checked) {
     payload.incident = {
