@@ -37,7 +37,12 @@ const CONFIG = {
 
 let currentLokasi = 'PETI_SEJUK';
 let logs = JSON.parse(localStorage.getItem('kk_sik_temp_logs') || '[]');
-let webAppUrl = localStorage.getItem('kk_sik_web_app_url') || CONFIG.defaultUrl;
+let storedUrl = localStorage.getItem('kk_sik_web_app_url');
+if (!storedUrl || storedUrl.includes('AKfycbw7') || storedUrl !== CONFIG.defaultUrl) {
+  localStorage.setItem('kk_sik_web_app_url', CONFIG.defaultUrl);
+  storedUrl = CONFIG.defaultUrl;
+}
+let webAppUrl = storedUrl;
 let tempChart = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -216,6 +221,8 @@ function toggleIncidentForm(show) {
   if (box) box.classList.toggle('hidden', !show);
 }
 
+let pendingOverwrite = false;
+
 /** Form Submission Handler */
 document.getElementById('tempForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -230,13 +237,12 @@ document.getElementById('tempForm').addEventListener('submit', async (e) => {
     semasa: fd.get('semasa'),
     max: fd.get('max'),
     perkara: fd.get('perkara'),
-    nama: fd.get('nama')
+    nama: fd.get('nama'),
+    overwrite: pendingOverwrite
   };
-  const existingIdx = logs.findIndex(l => l.lokasi === payload.lokasi && l.date === payload.date && l.slot === payload.slot);
-  if (existingIdx !== -1) {
-    if (!confirm("Data bagi slot ini telah diisi. Adakah anda pasti mahu overwrite?")) return;
-    logs.splice(existingIdx, 1);
-  }
+
+  // Reset overwrite flag for next submission
+  pendingOverwrite = false;
 
   if (document.getElementById('incidentYes').checked) {
     payload.incident = {
@@ -256,25 +262,34 @@ document.getElementById('tempForm').addEventListener('submit', async (e) => {
 
   if (webAppUrl) {
     try {
-      // Google Apps Script returns a 302 redirect on POST.
-      // Cross-origin fetch in 'cors' mode cannot follow this redirect,
-      // so we use 'no-cors' mode with redirect:'follow' to allow the
-      // browser to follow the redirect and deliver the payload.
-      // The trade-off: we cannot read the response body in 'no-cors' mode,
-      // so we treat a successful fetch (no thrown error) as success.
       const res = await fetch(webAppUrl, {
         method: 'POST',
-        mode: 'no-cors',
-        redirect: 'follow',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
-      // In 'no-cors' mode, res.type will be 'opaque' and status will be 0.
-      // If we get here without error, the request was sent successfully.
-      success = true;
+      responseData = await res.json();
+      if (responseData.ok) {
+        success = true;
+      } else if (responseData.already && !payload.overwrite) {
+        // Handle Overwrite Confirmation Modal
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🚀 Hantar Rekod Suhu';
+        showOverwriteModal(payload, responseData.row);
+        return;
+      }
     } catch (err) {
-      console.error('Fetch to Google Apps Script failed:', err);
-      success = false;
+      console.warn('Primary fetch error, executing fallback send:', err);
+      try {
+        await fetch(webAppUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        success = true;
+      } catch (e2) {
+        console.error('Fallback fetch failed:', e2);
+      }
     }
   }
 
@@ -300,12 +315,12 @@ document.getElementById('tempForm').addEventListener('submit', async (e) => {
 function showOverwriteModal(payload, row) {
   const modal = document.getElementById('overwriteModal');
   document.getElementById('overwriteDataText').textContent = 
-    `Rekod bagi ${payload.lokasi} pada ${payload.date} (${payload.slot}) sudah wujud pada Baris ${row}. Adakah anda pasti untuk mengemas kini (overwrite)?`;
+    `Rekod bagi ${payload.lokasi.replace('_',' ')} pada ${payload.date} (${payload.slot}) sudah wujud pada Baris ${row}. Adakah anda pasti untuk mengemas kini (overwrite)?`;
   modal.classList.add('active');
 
   document.getElementById('confirmOverwriteBtn').onclick = () => {
     modal.classList.remove('active');
-    payload.overwrite = true;
+    pendingOverwrite = true;
     document.getElementById('tempForm').dispatchEvent(new Event('submit'));
   };
 }
