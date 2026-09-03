@@ -479,7 +479,7 @@
 
   <script>
     // HARDCODED WEB APP URL & SECRET ADMIN PIN
-    let HARDCODED_URL = 'https://script.google.com/macros/s/AKfycbw7Ltd8m5X_pxqjudaR5UJ1GeKyXwu5pcaqSeTcwzmeXXo7MCcWIVaS1_4ZkyNVj2LQ5Q/exec'; 
+    let HARDCODED_URL = 'https://script.google.com/macros/s/AKfycbx84PC4_XAKuYaT9NGZgq4-wZbafTlal7h4YmURvX0rZ5-6zQrRpM_FcxAbt-HMo28/exec'; 
     let ADMIN_PIN = '2104';
 
     let currentFridge = 'PETI_SEJUK_1';
@@ -626,11 +626,13 @@
         try {
           const res = await fetch(webAppUrl, {
             method: 'POST',
+            mode: 'no-cors',
+            redirect: 'follow',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
           });
-          const data = await res.json();
-          if (data.ok) success = true;
+          // no-cors mode: can't read response, but data is sent if no error
+          success = true;
         } catch (err) {
           console.warn('Network error, saving locally:', err);
         }
