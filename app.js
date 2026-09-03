@@ -4,7 +4,7 @@
 
 const CONFIG = {
   unit: 'UNIT FARMASI KLINIK KESIHATAN SIK',
-  defaultUrl: 'https://script.google.com/macros/s/AKfycbw7Ltd8m5X_pxqjudaR5UJ1GeKyXwu5pcaqSeTcwzmeXXo7MCcWIVaS1_4ZkyNVj2LQ5Q/exec',
+  defaultUrl: 'https://script.google.com/macros/s/AKfycbx84PC4_XAKuYaT9NGZgq4-wZbafTlal7h4YmURvX0rZ5-6zQrRpM_FcxAbt-HMo28/exec',
   adminPin: '2104',
   ranges: {
     PETI_SEJUK: { min: -4, max: 17, targetMin: 2, targetMax: 8, label: 'Peti Sejuk (Cold Chain: 2.0°C ke 8.0°C)' },
@@ -251,34 +251,25 @@ document.getElementById('tempForm').addEventListener('submit', async (e) => {
 
   if (webAppUrl) {
     try {
+      // Google Apps Script returns a 302 redirect on POST.
+      // Cross-origin fetch in 'cors' mode cannot follow this redirect,
+      // so we use 'no-cors' mode with redirect:'follow' to allow the
+      // browser to follow the redirect and deliver the payload.
+      // The trade-off: we cannot read the response body in 'no-cors' mode,
+      // so we treat a successful fetch (no thrown error) as success.
       const res = await fetch(webAppUrl, {
         method: 'POST',
+        mode: 'no-cors',
+        redirect: 'follow',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
-      responseData = await res.json();
-      if (responseData.ok) {
-        success = true;
-      } else if (responseData.already && !payload.overwrite) {
-        // Handle Overwrite Confirmation Modal
-        submitBtn.disabled = false;
-        submitBtn.textContent = '🚀 Hantar Rekod Suhu';
-        showOverwriteModal(payload, responseData.row);
-        return;
-      }
+      // In 'no-cors' mode, res.type will be 'opaque' and status will be 0.
+      // If we get here without error, the request was sent successfully.
+      success = true;
     } catch (err) {
-      console.warn('Primary fetch error, executing fallback send:', err);
-      try {
-        await fetch(webAppUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-        success = true;
-      } catch (e2) {
-        console.error('Fallback fetch failed:', e2);
-      }
+      console.error('Fetch to Google Apps Script failed:', err);
+      success = false;
     }
   }
 
