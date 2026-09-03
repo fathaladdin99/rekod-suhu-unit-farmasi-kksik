@@ -2,8 +2,8 @@
 <html lang="ms">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Rekod Suhu — Unit Farmasi Klinik Kesihatan Sik</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rekod Suhu Master — Unit Farmasi KK Sik</title>
 
   <!-- Google Fonts & Chart.js -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,230 +15,215 @@
 </head>
 <body>
 
-  <!-- App Header -->
+  <!-- Compact Mobile App Header -->
   <header class="app-header">
     <div class="header-container">
       <div>
-        <span class="brand-badge">Kementerian Kesihatan Malaysia</span>
+        <span class="brand-badge">KK Sik • Unit Farmasi</span>
         <h1 class="brand-title">❄️ Rekod Suhu Master</h1>
-        <div class="brand-subtitle">Unit Farmasi, Klinik Kesihatan Sik (Peti Sejuk, Bilik, Substor)</div>
       </div>
 
       <div class="header-controls">
-        <button class="icon-btn" onclick="exportCSV()" title="Muat Turun Data CSV">
-          📥 Eksport CSV
+        <button class="icon-btn" onclick="exportCSV()" title="Eksport CSV">
+          📥 CSV
         </button>
-        <button class="icon-btn" onclick="openAdminSettings()" title="Tetapan Web App URL & Security">
-          ⚙️ Tetapan Server
+        <button class="icon-btn" onclick="openAdminSettings()" title="Tetapan Server">
+          ⚙️
         </button>
       </div>
     </div>
   </header>
 
-  <!-- Main Application Wrapper -->
+  <!-- Main Mobile Container -->
   <main class="main-wrapper">
 
-    <!-- Location Selector Tabs -->
-    <nav class="location-tabs-card">
+    <!-- 1. Segmented Mobile Location Switcher Bar -->
+    <nav class="location-segmented-bar" aria-label="Pilih Lokasi">
       <button class="tab-btn active" data-lokasi="PETI_SEJUK" onclick="switchLokasi('PETI_SEJUK')">
-        <span>🧊 Peti Sejuk</span>
-        <span class="tab-sub">Julat: -4°C ke 17°C</span>
+        <span class="tab-icon">🧊</span>
+        <span>Peti Sejuk</span>
+        <span class="tab-sub">-4°C ~ 17°C</span>
       </button>
       <button class="tab-btn" data-lokasi="BILIK" onclick="switchLokasi('BILIK')">
-        <span>🏢 Bilik</span>
-        <span class="tab-sub">Julat: 12°C ke 34°C</span>
+        <span class="tab-icon">🏢</span>
+        <span>Bilik</span>
+        <span class="tab-sub">12°C ~ 34°C</span>
       </button>
       <button class="tab-btn" data-lokasi="SUBSTOR" onclick="switchLokasi('SUBSTOR')">
-        <span>📦 Substor</span>
-        <span class="tab-sub">Julat: 12°C ke 34°C</span>
+        <span class="tab-icon">📦</span>
+        <span>Substor</span>
+        <span class="tab-sub">12°C ~ 34°C</span>
       </button>
     </nav>
 
-    <!-- Main Temperature Logging Form Card -->
-    <section class="card">
-      <div class="card-header">
-        <h2 class="card-title">
-          📝 Borang Rekod Suhu: <span id="activeLocationTitle">Peti Sejuk</span>
-        </h2>
-        <span id="locationRangeBadge" class="range-pill">Peti Sejuk (Cold Chain: 2.0°C ke 8.0°C)</span>
-      </div>
+    <!-- Range & Target Sheet Status Line -->
+    <div class="location-info-bar">
+      <span id="locationRangeBadge">Peti Sejuk (Cold Chain: 2.0°C - 8.0°C)</span>
+      <span id="targetRowPill">Target: Baris --</span>
+    </div>
 
-      <form id="tempForm">
+    <!-- View Switcher (Borang / Analytics / Sejarah) -->
+    <div class="view-tabs-bar">
+      <button class="view-tab-btn active" id="viewBtnForm" onclick="switchView('form')">📝 Borang Input</button>
+      <button class="view-tab-btn" id="viewBtnHistory" onclick="switchView('history')">📋 Sejarah Rekod</button>
+      <button class="view-tab-btn" id="viewBtnChart" onclick="switchView('chart')">📊 Trend Chart</button>
+    </div>
 
-        <!-- Section 1: Tarikh & Waktu -->
-        <div class="section-group">
-          <div class="section-title">
-            <span>📅</span> 1. Tarikh & Sesi Log (AM / PM)
-          </div>
-          <div class="grid-2">
+    <!-- View 1: Main Temperature Entry Form -->
+    <div id="formViewSection">
+      <section class="card">
+        <form id="tempForm" autocomplete="on">
+
+          <!-- Date & AM/PM Slot Compact Bar -->
+          <div class="form-row-compact">
             <div>
-              <label for="dateInput">Tarikh Log</label>
+              <label for="dateInput">📅 Tarikh Log</label>
               <input type="date" id="dateInput" name="date" required />
             </div>
 
             <div>
-              <label>Sesi Waktu Log</label>
+              <label>⏰ Sesi Log</label>
               <div class="slot-pill-group">
                 <div class="slot-pill">
                   <input type="radio" id="slotAM" name="slot" value="AM" checked />
-                  <label for="slotAM" class="slot-label">
-                    <span>AM (Pagi)</span>
-                    <span class="slot-time-range">07:00 - 13:00</span>
-                  </label>
+                  <label for="slotAM" class="slot-label">AM (Pagi)</label>
                 </div>
                 <div class="slot-pill">
                   <input type="radio" id="slotPM" name="slot" value="PM" />
-                  <label for="slotPM" class="slot-label">
-                    <span>PM (Petang)</span>
-                    <span class="slot-time-range">14:00 - 18:00</span>
-                  </label>
+                  <label for="slotPM" class="slot-label">PM (Petang)</label>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Dynamic Status Badges -->
-          <div class="status-pill-container">
-            <div id="timeWindowPill" class="info-pill in-window">
-              🟢 Dalam Waktu Sesi AM
-            </div>
-            <div id="targetRowPill" class="info-pill row-pill">
-              📊 Target Google Sheets: Baris 2 (AM)
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 2: Bacaan Suhu -->
-        <div class="section-group">
-          <div class="section-title">
-            <span>🌡️</span> 2. Bacaan Suhu (°C)
-          </div>
-          <div class="grid-3">
-            <div>
-              <label for="min">Suhu Minimum (°C)</label>
-              <input type="number" step="0.1" id="min" name="min" placeholder="Contoh: 4.0" />
-              <div id="minBadge" class="temp-badge hidden"></div>
-            </div>
-
-            <div>
-              <label for="semasa">Suhu Semasa (°C)</label>
-              <input type="number" step="0.1" id="semasa" name="semasa" placeholder="Contoh: 4.5" />
-              <div id="semasaBadge" class="temp-badge hidden"></div>
-            </div>
-
-            <div>
-              <label for="max">Suhu Maksimum (°C)</label>
-              <input type="number" step="0.1" id="max" name="max" placeholder="Contoh: 5.2" />
-              <div id="maxBadge" class="temp-badge hidden"></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 3: Perkara & Nama Pegawai -->
-        <div class="section-group">
-          <div class="section-title">
-            <span>📋</span> 3. Perkara / Status & Nama Pegawai
-          </div>
-          <div class="grid-2">
-            <div>
-              <label for="perkaraSelect">Pilih Perkara Jika Ada Isu / Masalah</label>
-              <select id="perkaraSelect" name="perkara">
-                <!-- Dynamically Populated -->
-              </select>
-            </div>
-
-            <div>
-              <label for="namaInput">Nama Pegawai / Pencatat</label>
-              <input type="text" id="namaInput" name="nama" placeholder="Contoh: Pegawai Farmasi Aisyah" required />
-            </div>
-          </div>
-        </div>
-
-        <!-- Section 4: Incident Log (CATATAN SUHU LUAR JULAT) -->
-        <div class="section-group">
-          <div class="section-title">
-            <span>🚨</span> 4. Catatan Suhu Luar Julat (Opsional)
+          <!-- AM/PM Window Alert Badge -->
+          <div id="timeWindowPill" class="info-pill in-window" style="margin-bottom:10px; padding:6px 10px; font-size:0.75rem;">
+            🟢 Dalam Waktu Sesi AM Rasmi (07:00 AM - 01:00 PM)
           </div>
 
-          <div style="display:flex; gap:20px; align-items:center;">
-            <label style="margin:0;">Aktifkan Incident Log?</label>
-            <label style="cursor:pointer; font-weight:normal;">
-              <input type="radio" id="incidentNo" name="incidentEnable" value="no" checked onclick="toggleIncidentForm(false)"> Tidak
-            </label>
-            <label style="cursor:pointer; font-weight:normal;">
-              <input type="radio" id="incidentYes" name="incidentEnable" value="yes" onclick="toggleIncidentForm(true)"> Ya
+          <!-- 3-Column Mobile Temperature Inputs -->
+          <div style="margin-bottom:4px;">
+            <label style="color:var(--primary-dark); font-weight:800; font-size:0.82rem;">🌡️ BACAAN SUHU (°C)</label>
+          </div>
+          
+          <div class="temp-grid-mobile">
+            <div class="temp-box">
+              <label for="min">MIN (°C)</label>
+              <input type="number" step="0.1" id="min" name="min" placeholder="4.0" inputmode="decimal" required />
+              <div id="minBadge" class="temp-badge-small hidden"></div>
+            </div>
+
+            <div class="temp-box" style="border-color:var(--primary);">
+              <label for="semasa">SEMASA (°C)</label>
+              <input type="number" step="0.1" id="semasa" name="semasa" placeholder="4.5" inputmode="decimal" required />
+              <div id="semasaBadge" class="temp-badge-small hidden"></div>
+            </div>
+
+            <div class="temp-box">
+              <label for="max">MAX (°C)</label>
+              <input type="number" step="0.1" id="max" name="max" placeholder="5.2" inputmode="decimal" required />
+              <div id="maxBadge" class="temp-badge-small hidden"></div>
+            </div>
+          </div>
+
+          <!-- Staff Name / Pencatat Input -->
+          <div class="form-group" style="margin-top:8px;">
+            <label for="namaInput">👤 Nama Pegawai / Pencatat</label>
+            <input type="text" id="namaInput" name="nama" placeholder="Contoh: Aisyah / Fathi" required autocomplete="name" />
+            <label class="remember-checkbox-label">
+              <input type="checkbox" id="rememberNameCheckbox" checked />
+              Simpan nama ini untuk tugasan seterusnya
             </label>
           </div>
 
-          <div id="incidentFieldsBox" class="hidden" style="margin-top:14px; padding-top:14px; border-top:1.5px dashed var(--border-color);">
-            <div class="grid-2" style="margin-bottom:12px;">
-              <div>
-                <label for="incidentDate">Tarikh Kejadian</label>
-                <input type="date" id="incidentDate" />
-              </div>
-              <div>
-                <label for="incidentTime">Masa Kejadian</label>
-                <input type="time" id="incidentTime" />
-              </div>
+          <!-- Collapsible Incident & Issue Log (Auto-expands if out of range) -->
+          <div class="accordion-box">
+            <div class="accordion-header" id="accordionHeader" onclick="toggleIncidentAccordion()">
+              <span>🚨 Isu / Catatan Suhu Luar Julat (Opsional)</span>
+              <span id="accordionChevron">▼</span>
             </div>
 
-            <div style="margin-bottom:12px;">
-              <label for="incidentOfficer">Nama Pegawai Bertanggungjawab</label>
-              <input type="text" id="incidentOfficer" placeholder="Nama Pegawai Penjelas" />
-            </div>
+            <div id="incidentFieldsBox" class="accordion-content hidden">
+              <div style="margin-bottom:8px;">
+                <label for="perkaraSelect">Pilih Kod Perkara (Jika Ada Isu)</label>
+                <select id="perkaraSelect" name="perkara">
+                  <!-- Dynamically Populated -->
+                </select>
+              </div>
 
-            <div>
-              <label for="incidentNote">Penjelasan / Tindakan Pembetulan Taken</label>
-              <textarea id="incidentNote" rows="3" placeholder="Sila nyatakan tindakan susulan (contoh: pemindahan stok ubat, penyesuaian suis aircond)..."></textarea>
+              <div class="form-row-compact" style="margin-top:8px;">
+                <div>
+                  <label for="incidentDate">Tarikh Kejadian</label>
+                  <input type="date" id="incidentDate" />
+                </div>
+                <div>
+                  <label for="incidentTime">Masa Kejadian</label>
+                  <input type="time" id="incidentTime" />
+                </div>
+              </div>
+
+              <div style="margin-top:8px;">
+                <label for="incidentOfficer">Pegawai Melapor</label>
+                <input type="text" id="incidentOfficer" placeholder="Nama Pegawai" />
+              </div>
+
+              <div style="margin-top:8px;">
+                <label for="incidentNote">Tindakan Pembetulan / Penjelasan</label>
+                <textarea id="incidentNote" rows="2" placeholder="Terangkan tindakan yang telah diambil..."></textarea>
+              </div>
             </div>
           </div>
+
+          <!-- Fast Action Buttons -->
+          <div class="btn-group-mobile">
+            <button type="button" class="btn btn-secondary" onclick="resetForm()">Semula</button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">🚀 Hantar Rekod Suhu</button>
+          </div>
+
+        </form>
+      </section>
+    </div>
+
+    <!-- View 2: Recent Logs Table Card -->
+    <div id="historyViewSection" class="hidden">
+      <section class="card">
+        <div class="card-header">
+          <h3 class="card-title">📋 Rekod Terbaru: <span id="historyLocationTitle">Peti Sejuk</span></h3>
+          <button class="icon-btn" onclick="exportCSV()" style="background:var(--primary); color:white; padding:4px 8px; font-size:0.75rem;">📥 Download CSV</button>
         </div>
-
-        <!-- Submit Buttons -->
-        <div class="btn-group">
-          <button type="button" class="btn btn-secondary" onclick="resetForm()">Semula</button>
-          <button type="submit" class="btn btn-primary" id="submitBtn">🚀 Hantar Rekod Suhu</button>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Tarikh</th>
+                <th>Slot</th>
+                <th>Min</th>
+                <th>Semasa</th>
+                <th>Max</th>
+                <th>Perkara</th>
+                <th>Pencatat</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody">
+              <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:16px;">Memuatkan data...</td></tr>
+            </tbody>
+          </table>
         </div>
+      </section>
+    </div>
 
-      </form>
-    </section>
-
-    <!-- Temperature Analytics Chart Card -->
-    <section class="card">
-      <div class="card-header">
-        <h3 class="card-title">📈 Trend Bacaan Suhu</h3>
-      </div>
-      <div style="height: 280px; position: relative;">
-        <canvas id="tempChart"></canvas>
-      </div>
-    </section>
-
-    <!-- Recent Logs Table Card -->
-    <section class="card">
-      <div class="card-header">
-        <h3 class="card-title">📋 Rekod Suhu Terbaru</h3>
-        <button class="btn btn-secondary" onclick="exportCSV()" style="padding:6px 12px; font-size:0.8rem;">📥 Download CSV</button>
-      </div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Tarikh</th>
-              <th>Slot</th>
-              <th>Min</th>
-              <th>Semasa</th>
-              <th>Max</th>
-              <th>Perkara</th>
-              <th>Pegawai</th>
-              <th>Status Sync</th>
-            </tr>
-          </thead>
-          <tbody id="logTableBody">
-            <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:20px;">Memuatkan data...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <!-- View 3: Temperature Analytics Chart Card -->
+    <div id="chartViewSection" class="hidden">
+      <section class="card">
+        <div class="card-header">
+          <h3 class="card-title">📈 Trend Suhu — <span id="chartLocationTitle">Peti Sejuk</span></h3>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="tempChart"></canvas>
+        </div>
+      </section>
+    </div>
 
   </main>
 
@@ -246,15 +231,15 @@
   <div id="settingsModal" class="modal-overlay">
     <div class="modal-box">
       <button type="button" class="close-x-btn" onclick="closeSettings()" title="Tutup">&times;</button>
-      <h3 style="color:var(--primary-dark); margin-bottom:8px;">⚙️ Tetapan Server & Security</h3>
-      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:14px;">
-        Masukkan PIN Admin untuk mengemas kini Google Apps Script Web App URL.
+      <h3 style="color:var(--primary-dark); margin-bottom:6px;">⚙️ Tetapan Server & Security</h3>
+      <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:12px;">
+        Masukkan PIN Admin untuk mengemas kini Google Apps Script URL.
       </p>
 
       <div id="pinBox">
         <label for="adminPin">PIN Security Admin</label>
-        <input type="password" id="adminPin" placeholder="Masukkan PIN Rahsia Admin" style="margin-bottom:12px;" />
-        <div class="btn-group">
+        <input type="password" id="adminPin" placeholder="PIN Rahsia Admin" style="margin-bottom:10px;" />
+        <div class="btn-group-mobile">
           <button type="button" class="btn btn-secondary" onclick="closeSettings()">Batal</button>
           <button type="button" class="btn btn-primary" onclick="unlockAdmin()">Buka Tetapan</button>
         </div>
@@ -262,8 +247,8 @@
 
       <div id="urlBox" class="hidden">
         <label for="webAppUrl">Google Apps Script Web App URL</label>
-        <input type="url" id="webAppUrl" placeholder="https://script.google.com/macros/s/.../exec" style="margin-bottom:14px;" />
-        <div class="btn-group">
+        <input type="url" id="webAppUrl" placeholder="https://script.google.com/macros/s/.../exec" style="margin-bottom:12px;" />
+        <div class="btn-group-mobile">
           <button type="button" class="btn btn-secondary" onclick="closeSettings()">Batal</button>
           <button type="button" class="btn btn-primary" onclick="saveSettings()">Simpan URL</button>
         </div>
@@ -274,11 +259,11 @@
   <!-- Overwrite Confirmation Modal -->
   <div id="overwriteModal" class="modal-overlay">
     <div class="modal-box">
-      <h3 style="color:var(--warning); margin-bottom:8px;">⚠️ Rekod Sudah Wujud!</h3>
-      <p id="overwriteDataText" style="font-size:0.9rem; color:var(--text-main); margin-bottom:16px;">
+      <h3 style="color:var(--warning); margin-bottom:6px;">⚠️ Rekod Sudah Wujud!</h3>
+      <p id="overwriteDataText" style="font-size:0.85rem; color:var(--text-main); margin-bottom:14px;">
         Data untuk tarikh ini telah ada di Google Sheet. Adakah anda ingin mengemas kini (overwrite)?
       </p>
-      <div class="btn-group">
+      <div class="btn-group-mobile">
         <button type="button" class="btn btn-secondary" onclick="closeOverwriteModal()">Batal</button>
         <button type="button" class="btn btn-primary" id="confirmOverwriteBtn">Ya, Overwrite</button>
       </div>
@@ -288,11 +273,12 @@
   <!-- Success Notification Modal -->
   <div id="successModal" class="modal-overlay">
     <div class="modal-box" style="text-align:center;">
-      <h2 style="color:var(--success); margin-bottom:8px;">✅ Berjaya!</h2>
-      <p id="successText" style="font-size:0.9rem; color:var(--text-main);">Rekod suhu telah berjaya disimpan.</p>
+      <h2 style="color:var(--success); margin-bottom:6px;">✅ Berjaya!</h2>
+      <p id="successText" style="font-size:0.85rem; color:var(--text-main);">Rekod suhu telah berjaya disimpan.</p>
     </div>
   </div>
 
   <script src="app.js"></script>
 </body>
 </html>
+
